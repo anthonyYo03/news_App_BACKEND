@@ -41,7 +41,7 @@ const createNews = async (req, res) => {
       recipients: allUserIds,
       type: "news",
       title: "New News Posted",
-      message: `${journalist.username} posted a new news: ${title}`,
+      message: `${journalist.username} posted a new article: ${title}`,
       relatedId: newNews.news_id,
       relatedModel: "News"
     });
@@ -60,12 +60,12 @@ const createNews = async (req, res) => {
 
 const getNews = async (req, res) => {
   const { newsId } = req.params;
-  const { limit = 10, offset = 0 } = req.query;
+  const { limit = 10, offset = 0, news_type_id } = req.query;
 
   try {
     if (newsId) {
       const news = await News.findByPk(newsId, {
-        include: [{ model: User, as: 'author', attributes: ['username'] }]  // 👈 add this
+        include: [{ model: User, as: 'author', attributes: ['username'] }]  
       });
       
       if (!news) {
@@ -75,16 +75,23 @@ const getNews = async (req, res) => {
       return res.status(200).json(news);
     }
 
-    // Otherwise, get all news with pagination
+    // Build filter object
+    const whereFilter = {};
+    if (news_type_id) {
+      whereFilter.news_type_id = parseInt(news_type_id);
+    }
+
+    // Otherwise, get all news with pagination and optional filtering
    const allNews = await News.findAll({
+      where: whereFilter,
       include: [{ model: User, as: 'author', attributes: ['username'] }],  // 👈 add this
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset) 
     });
 
-    // Get total count of news
-    const totalCount = await News.count();
+    // Get total count of news (with filter applied)
+    const totalCount = await News.count({ where: whereFilter });
 
     res.status(200).json({
       message: 'News retrieved successfully',
@@ -196,7 +203,9 @@ const getOneNews = async (req, res) => {
     }
 
     // Get single news by ID
-    const news = await News.findByPk(newsId);
+    const news = await News.findByPk(newsId,{
+        include: [{ model: User, as: 'author', attributes: ['username'] }]  
+      });
     
     if (!news) {
       return res.status(404).json({ message: 'News not found' });

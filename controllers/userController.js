@@ -208,17 +208,25 @@ if (!validator.isStrongPassword(password)) {
 };
 
 const getUsers = async (req, res) => {
-  const { limit = 10, offset = 0 } = req.query;
+  const { limit = 10, offset = 0, user_type_id } = req.query;
 
   try {
-    // Get users with pagination
+    // Build filter object
+    const whereFilter = {};
+    if (user_type_id) {
+      whereFilter.user_type_id = parseInt(user_type_id);
+    }
+
+    // Get users with pagination sorted by createdAt (newest first)
     const users = await User.findAll({
+      where: whereFilter,
       limit: parseInt(limit),
-      offset: parseInt(offset)
+      offset: parseInt(offset),
+      order: [['createdAt', 'DESC']]
     });
 
-    // Get total count of users
-    const totalCount = await User.count();
+    // Get total count of users (with filter applied)
+    const totalCount = await User.count({ where: whereFilter });
 
     res.status(200).json({
       message: 'Users retrieved successfully',
@@ -452,7 +460,8 @@ const getOneUser = async (req, res) => {
         user_id: user.user_id,
         email: user.email,
         username: user.username,
-        user_type_id: user.user_type_id
+        user_type_id: user.user_type_id,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
