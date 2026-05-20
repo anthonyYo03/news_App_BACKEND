@@ -22,9 +22,12 @@ console.log('Starting server...');
 const app = express();
 const httpServer = http.createServer(app);
 
+// Normalize FRONTEND_URL by removing trailing slash
+const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '');
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: frontendUrl,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
@@ -55,7 +58,7 @@ io.on('connection', (socket) => {
 });
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: frontendUrl,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
