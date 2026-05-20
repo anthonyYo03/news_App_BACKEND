@@ -5,20 +5,21 @@ import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import { initDB } from './db/db.js';
 import { secretKey } from './middlewares/config.js';
-// Import routes
 import newsRoutes from './routes/newsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import likeRoutes from './routes/likeRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import shareRoutes from './routes/shareRoutes.js';
-import http from 'http'
-import { Server } from 'socket.io'
-import { setIo } from './utils/socketManager.js'
+import http from 'http';
+import { Server } from 'socket.io';
+import { setIo } from './utils/socketManager.js';
 import './models/associations.js';
-dotenv.config();
-const app = express();
 
+dotenv.config();
+console.log('Starting server...');
+
+const app = express();
 const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
@@ -32,7 +33,6 @@ const io = new Server(httpServer, {
 
 setIo(io);
 
-// Socket.IO authentication middleware
 io.use((socket, next) => {
   const cookieHeader = socket.handshake.headers.cookie || '';
   const tokenCookie = cookieHeader.split(';').find(c => c.trim().startsWith('token='));
@@ -65,7 +65,6 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-// Register routes
 app.use('/api/news', newsRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/comment', commentRoutes);
@@ -73,7 +72,13 @@ app.use('/api/like', likeRoutes);
 app.use('/api/notification', notificationRoutes);
 app.use('/api/share', shareRoutes);
 
-    
-await initDB();
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+try {
+  console.log('Connecting to database...');
+  await initDB();
+  console.log('Database connected!');
+  const PORT = process.env.PORT || 5000;
+  httpServer.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+} catch (err) {
+  console.error('Startup error:', err);
+  process.exit(1);
+}
